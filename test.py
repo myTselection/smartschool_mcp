@@ -25,7 +25,7 @@ from smartschool import (
     SortField,
     SortOrder,
     StudentSupportLinks,
-    SmartSchoolException,
+    SmartSchoolException, # Corrected casing
     # Import other necessary components if needed
 )
 from smartschool.logger import setup_logger
@@ -60,7 +60,7 @@ def run_feature_test(feature_name, test_func):
         test_func()
         print(f"--- Finished: {feature_name} ---")
         success = True
-    except SmartSchoolException as e:
+    except SmartSchoolException as e: # Corrected casing
         logger.error(f"SmartSchool Error testing {feature_name}: {e}", exc_info=ENABLE_DEBUG_LOGGING)
         print(f"!!! SmartSchool Error testing {feature_name}: {e}")
     except Exception as e:
@@ -322,7 +322,7 @@ if __name__ == "__main__":
         # Add calls to other test functions here if needed
         # e.g., run_feature_test("Other Feature", test_other_feature)
 
-    except SmartSchoolException as e:
+    except SmartSchoolException as e: # Corrected casing
         logger.critical(f"Failed to initialize Smartschool session or critical error: {e}", exc_info=ENABLE_DEBUG_LOGGING)
         print(f"\n!!! CRITICAL ERROR: {e}")
     except FileNotFoundError:

@@ -23,6 +23,7 @@ bs4 = "*"
 requests = "*"
 pyyaml = "*"
 pydantic = "*"
+beautifulsoup4 = "^4.13.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest-mock = "*"
@@ -33,7 +34,6 @@ ruff = "*"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
 
 [tool.pytest.ini_options]
 testpaths = [

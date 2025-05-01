@@ -11,10 +11,10 @@ from .courses import (
 )
 from .credentials import EnvCredentials, PathCredentials, Credentials
 from .exceptions import (
-    SmartschoolException,
-    SmartschoolAuthenticationError,
-    SmartschoolParsingError,
-    DownloadError
+    SmartSchoolException, # Corrected casing
+    SmartSchoolAuthenticationError, # Corrected casing
+    SmartSchoolParsingError, # Corrected casing
+    SmartSchoolDownloadError # Corrected casing
 )
 from .file_fetch import download_document
 from .logger import setup_logger
@@ -70,10 +70,10 @@ __all__ = [
     "ResultDetail",
     "download_document",
     # Exceptions
-    "SmartschoolException",
-    "SmartschoolAuthenticationError",
-    "SmartschoolParsingError",
-    "DownloadError",
+    "SmartSchoolException", # Corrected casing
+    "SmartSchoolAuthenticationError", # Corrected casing
+    "SmartSchoolParsingError", # Corrected casing
+    "SmartSchoolDownloadError", # Corrected casing
 ]
 
 logger = setup_logger(logging.DEBUG)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from datetime import date, datetime
 from functools import cached_property
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional, Union
 
 from pydantic import AliasChoices, BeforeValidator, constr
 from pydantic.dataclasses import Field, dataclass
@@ -438,3 +438,28 @@ class MessageDeletionStatus:
     msgID: int
     boxType: str
     is_deleted: bool = Field(validation_alias=AliasChoices("status", "is_deleted"))
+
+
+@dataclass
+class FileItem:
+    """Represents a file within a course document folder."""
+    id: int
+    name: str
+    description: str | None
+    mime_type: str
+    size_kb: float
+    last_modified: datetime
+    download_url: Url # URL to download the file directly
+    view_url: Url | None # URL to view the file online (e.g., WOPI)
+
+
+@dataclass
+class FolderItem:
+    """Represents a subfolder within a course document folder."""
+    id: int
+    name: str
+    description: str | None
+    browse_url: Url # URL to browse the contents of this folder
+
+# Define the Union type for items found in document folders
+DocumentOrFolderItem = Union[FileItem, FolderItem]

@@ -134,7 +134,7 @@ This section details the main classes and functionalities provided by the librar
 
 *   **`SmartSchoolException`**: Base exception for library-specific errors.
 *   **`SmartschoolAuthenticationError`**: Raised specifically for login/authentication failures.
-*   **`DownloadError`**: Potentially raised during file download operations.
+*   **`SmartSchoolDownloadError`**: Potentially raised during file download operations.
 
 ## Authentication
 

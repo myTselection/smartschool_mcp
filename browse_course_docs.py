@@ -7,24 +7,26 @@ import traceback # For detailed error printing
 
 # Add the src directory to the Python path
 src_path = os.path.join(os.path.dirname(__file__), 'src')
-if src_path not in sys.path:
+if (src_path not in sys.path):
     sys.path.insert(0, src_path)
 
 try:
     from smartschool import (
         Smartschool,
         PathCredentials,
-        Courses,
-        CourseDocuments,
+        Courses, # Keep Courses to get platformId
+        # CourseDocuments, # No longer needed for listing
         FolderItem,
         FileItem,
-        DocumentOrFolderItem,
-        download_document,
-        SmartSchoolException, # Corrected casing
-        SmartschoolParsingError,
-        SmartschoolAuthenticationError
+        SmartSchoolException,
+        SmartSchoolParsingError,
+        SmartSchoolAuthenticationError
     )
+    # Import the specific functions needed from file_fetch
+    from smartschool.file_fetch import browse_course_documents, download_document
     from smartschool.logger import setup_logger
+    # Import Course object definition as well
+    from smartschool.objects import DocumentOrFolderItem, Course
 except ImportError as e:
     print(f"Error importing smartschool modules: {e}")
     print("Ensure the 'src' directory is correctly added to sys.path and all dependencies are installed.")
@@ -75,27 +77,32 @@ def get_user_choice(prompt: str, max_value: int) -> str | int | None:
              print("\\nExiting.")
              return 'q'
 
-def browse_documents(course_docs: CourseDocuments):
+
+def browse_documents(selected_course: Course): # Type hint updated to Course
     """Main loop for browsing folders and downloading files."""
     current_path_items: list[FolderItem] = [] # Stores the FolderItems representing the path
-    current_folder_id: int | None = None # None represents the root
-    parent_id: int | None = None # Keep track of parent for navigation
+    # current_folder_id now represents the parentID for listing, or the ssID for downloading
+    current_folder_id: int | None = None # None represents the root folder (parentID 0)
 
     while True:
         current_path_str = " / ".join([item.name for item in current_path_items]) if current_path_items else "(Root)"
         print(f"\\nCurrent Location: {current_path_str}")
 
         try:
-            # Fetch items. Pass current folder_id and parent_id.
-            # Note: SmartSchool's parentID logic might need adjustment.
-            # For root (current_folder_id=None), parent_id is likely irrelevant.
-            # For subfolders, the parent_id is the ssID of the folder *containing* the current one.
-            items = list(course_docs.list_folder_contents(folder_id=current_folder_id, parent_id=parent_id))
+            # Use browse_course_documents from file_fetch.py
+            # folder_id corresponds to parentID (0 for root)
+            # ss_id is the platform ID from the course object
+            parent_id_to_fetch = current_folder_id if current_folder_id is not None else 0
+            items = browse_course_documents(
+                course_id=selected_course.id,
+                folder_id=parent_id_to_fetch,
+                ss_id=selected_course.class_.platformId # Use platformId here
+            )
             items.sort(key=lambda x: (0 if isinstance(x, FolderItem) else 1, x.name)) # Folders first, then alphabetical
-        except SmartschoolParsingError as e:
-            print(f"  Error parsing folder contents: {e}")
-            items = []
-        except SmartschoolException as e:
+        except SmartSchoolAuthenticationError as e:
+            print(f"  Authentication error: {e}. Please check credentials or session.")
+            break # Exit on auth error
+        except SmartSchoolException as e:
             print(f"  Error fetching folder contents: {e}")
             # Option to retry or go back? For now, just show empty.
             items = []
@@ -109,46 +116,51 @@ def browse_documents(course_docs: CourseDocuments):
             break
         elif choice == 'u':
             if current_path_items:
-                current_path_items.pop() # Remove last folder from path
+                popped_folder = current_path_items.pop() # Remove last folder from path
                 if current_path_items:
+                    # Navigate up to the parent of the popped folder
+                    # The ID of the folder we navigate *to* becomes the current_folder_id (used as parentID for next listing)
                     current_folder_id = current_path_items[-1].id
-                    # Determine the new parent_id (parent of the folder we just navigated up *to*)
-                    parent_id = current_path_items[-2].id if len(current_path_items) > 1 else None
                 else:
-                    current_folder_id = None # Back to root
-                    parent_id = None
+                    # Back to root
+                    current_folder_id = None
             else:
                 print("  Already at the root folder.")
         elif isinstance(choice, int):
             selected_item = items[choice - 1]
             if isinstance(selected_item, FolderItem):
                 # Navigate into folder
-                parent_id = current_folder_id # The current folder becomes the parent
+                # The selected_item.id is the ssID of the folder itself, which becomes the new parentID for the next listing
                 current_folder_id = selected_item.id
                 current_path_items.append(selected_item)
             elif isinstance(selected_item, FileItem):
                 # Download file
                 print(f"  Selected file: {selected_item.name}")
                 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                # Construct target path within the download dir, preserving original name
-                target_file = DOWNLOAD_DIR / selected_item.name
+                # Sanitize filename if necessary, or use a different naming scheme
+                safe_filename = "".join(c if c.isalnum() or c in (' ', '.', '_', '-') else '_' for c in selected_item.name)
+                target_file = DOWNLOAD_DIR / safe_filename
                 print(f"  Attempting to download to: {target_file}")
                 try:
+                    # Call download_document from file_fetch.py
+                    # ss_id here refers to the ID of the folder *containing* the file
+                    containing_folder_id = current_folder_id if current_folder_id is not None else 0
                     download_document(
-                        course_id=selected_item.course_id,
-                        doc_id=selected_item.id,
-                        ss_id=selected_item.folder_id, # ssID is the folder *containing* the file
+                        course_id=selected_course.id, # Use course ID from selected course
+                        doc_id=selected_item.id,      # Use file's ID (docID)
+                        ss_id=containing_folder_id,   # Use the ID of the folder we are currently in (as the containing folder ID)
                         target_path=target_file,
-                        overwrite=False # Set to True or prompt user if needed
+                        overwrite=False
                     )
                     print(f"  Successfully downloaded '{selected_item.name}'.")
                 except FileExistsError:
                      print(f"  Download failed: File already exists at '{target_file}'. Use overwrite=True or delete the existing file.")
-                except SmartschoolException as e:
+                except SmartSchoolException as e:
                     print(f"  Download failed: {e}")
                 except Exception as e:
                     print(f"  An unexpected error occurred during download: {e}")
                     logger.error(f"Download error details: {traceback.format_exc()}")
+
 
 
 def main():
@@ -181,20 +193,19 @@ def main():
             selected_course = all_courses[choice - 1]
             print(f"\\nSelected Course: {selected_course.name} (ID: {selected_course.id})")
 
-        except SmartschoolException as e:
+        except SmartSchoolException as e:
             print(f"Error fetching courses: {e}")
             return
 
         # --- Browse Documents ---
-        course_docs = CourseDocuments(course_id=selected_course.id)
-        browse_documents(course_docs)
+        browse_documents(selected_course)
 
-    except (SmartschoolAuthenticationError, FileNotFoundError) as e:
+    except (SmartSchoolAuthenticationError, FileNotFoundError) as e:
         logger.critical(f"Initialization failed: {e}")
         print(f"\\n!!! CRITICAL ERROR: {e}")
         if isinstance(e, FileNotFoundError):
             print("Ensure credentials.yml exists and is configured correctly.")
-    except SmartschoolException as e:
+    except SmartSchoolException as e:
         logger.error(f"A Smartschool API error occurred: {e}")
         print(f"\\n!!! API ERROR: {e}")
     except Exception as e:

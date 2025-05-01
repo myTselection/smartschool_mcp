@@ -17,7 +17,7 @@ from urllib.parse import urljoin
 from requests import Session
 
 from .common import bs4_html, get_all_values_from_form
-from .exceptions import SmartschoolAuthenticationError # Ensure exception is imported
+from .exceptions import SmartSchoolAuthenticationError, SmartSchoolException # Corrected casing
 
 if TYPE_CHECKING:  # pragma: no cover
     from requests import Response
@@ -66,7 +66,7 @@ class Smartschool:
         """
         Ensures the session is authenticated. Checks current session validity first,
         then attempts login and verification if necessary.
-        Raises SmartschoolAuthenticationError on failure.
+        Raises SmartSchoolAuthenticationError on failure.
         """
         logger.debug("Entering _try_login: Checking session validity.")
 
@@ -123,19 +123,19 @@ class Smartschool:
             # (This block now only runs if we went through _do_login or _complete_verification above)
             if final_resp.url.endswith("/login") or final_resp.url.endswith("/account-verification"):
                 logger.error(f"Login/Verification process ended unexpectedly on {final_resp.url}")
-                raise SmartschoolAuthenticationError(f"Authentication failed, ended on {final_resp.url}")
+                raise SmartSchoolAuthenticationError(f"Authentication failed, ended on {final_resp.url}") # Corrected casing
             elif final_resp.status_code != 200:
                  logger.error(f"Login/Verification process ended with status {final_resp.status_code} at {final_resp.url}")
-                 raise SmartschoolAuthenticationError(f"Authentication failed, status {final_resp.status_code} at {final_resp.url}")
+                 raise SmartSchoolAuthenticationError(f"Authentication failed, status {final_resp.status_code} at {final_resp.url}") # Corrected casing
             else:
                  logger.debug("Login/Verification process completed successfully after _do_login/_complete_verification.")
                  self._session.cookies.save(ignore_discard=True)
 
         except Exception as e:
             logger.exception("Exception during login/verification process.")
-            # Wrap other exceptions in SmartschoolAuthenticationError
-            if not isinstance(e, SmartschoolAuthenticationError):
-                 raise SmartschoolAuthenticationError(f"An unexpected error occurred during authentication: {e}") from e
+            # Wrap other exceptions in SmartSchoolAuthenticationError
+            if not isinstance(e, SmartSchoolAuthenticationError): # Corrected casing
+                 raise SmartSchoolAuthenticationError(f"An unexpected error occurred during authentication: {e}") from e # Corrected casing
             else:
                  raise # Re-raise specific auth errors
 
@@ -173,7 +173,7 @@ class Smartschool:
         html = bs4_html(login_page_response)
         inputs = get_all_values_from_form(html, 'form[name="login_form"]')
         if not inputs:
-            raise SmartschoolAuthenticationError("Could not find login form inputs.")
+            raise SmartSchoolAuthenticationError("Could not find login form inputs.") # Corrected casing
         logger.debug(f"Found {len(inputs)} inputs in login form")
 
         # Prepare login data
@@ -196,7 +196,7 @@ class Smartschool:
 
         if not username_field_found or not password_field_found:
              logger.error(f"Did not find both username and password fields in the login form. Fields found: {list(data.keys())}")
-             raise SmartschoolAuthenticationError("Login form parsing failed: Missing username or password field.")
+             raise SmartSchoolAuthenticationError("Login form parsing failed: Missing username or password field.") # Corrected casing
 
         logged_data = {k: (v if 'password' not in k else '********') for k, v in data.items()}
         logger.debug(f"Data prepared for login POST: {logged_data}")
@@ -231,7 +231,7 @@ class Smartschool:
         inputs = get_all_values_from_form(html, 'form[name="account_verification_form"]')
         if not inputs: inputs = get_all_values_from_form(html, 'form:has(input#account_verification_form__token)') # Fallback
         if not inputs:
-            raise SmartschoolAuthenticationError("Could not find verification form fields")
+            raise SmartSchoolAuthenticationError("Could not find verification form fields") # Corrected casing
 
         # Prepare verification data
         verification_data = {}
@@ -247,11 +247,11 @@ class Smartschool:
                 verification_data[input_name] = input_value
 
         if not security_question_field:
-            raise SmartschoolAuthenticationError("Could not find security question field in verification form")
+            raise SmartSchoolAuthenticationError("Could not find security question field in verification form") # Corrected casing
 
         # Ensure birth date is present and correctly formatted
         if not hasattr(self.creds, 'birth_date') or not self.creds.birth_date:
-            raise SmartschoolAuthenticationError("Birth date is required for verification but not provided in credentials")
+            raise SmartSchoolAuthenticationError("Birth date is required for verification but not provided in credentials") # Corrected casing
 
         birth_date_str = self.creds.birth_date
         if isinstance(birth_date_str, datetime.date):

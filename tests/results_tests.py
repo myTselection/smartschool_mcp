@@ -1,6 +1,6 @@
 import pytest
 from requests_mock import ANY
-from smartschool import DownloadError, ResultDetail, Results
+from smartschool import SmartSchoolDownloadError, ResultDetail, Results
 
 
 def test_results_normal_flow(mocker):
@@ -24,26 +24,26 @@ def test_result_detail_normal_flow():
 
 
 def test_result_detail_with_empty_return_value():
-    with pytest.raises(DownloadError):
+    with pytest.raises(SmartSchoolDownloadError):
         ResultDetail(result_id="empty_return_value").get()
 
 
 def test_result_detail_with_faulty_session_get(requests_mock):
     requests_mock.register_uri(ANY, ANY, status_code=404)
 
-    with pytest.raises(DownloadError):
+    with pytest.raises(SmartSchoolDownloadError):
         ResultDetail(result_id="abc_normal_123").get()
 
 
 def test_result_with_empty_return_value(requests_mock):
     requests_mock.register_uri(ANY, ANY, text="")
 
-    with pytest.raises(DownloadError):
+    with pytest.raises(SmartSchoolDownloadError):
         next(iter(Results()))
 
 
 def test_result_with_faulty_session_get(requests_mock):
     requests_mock.register_uri(ANY, ANY, status_code=404)
 
-    with pytest.raises(DownloadError):
+    with pytest.raises(SmartSchoolDownloadError):
         next(iter(Results()))
