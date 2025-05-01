@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from datetime import date, datetime
 from functools import cached_property
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from pydantic import AliasChoices, BeforeValidator, constr
 from pydantic.dataclasses import Field, dataclass
@@ -11,10 +11,11 @@ from pydantic.dataclasses import Field, dataclass
 from .common import as_float
 from .session import session
 
+# Keep the constr definition for Pydantic's use, but use 'str' for type hints
 String = constr(strip_whitespace=True)
 
 
-def convert_to_datetime(x: str | String | datetime) -> datetime:
+def convert_to_datetime(x: str | datetime) -> datetime:
     if isinstance(x, datetime):
         if x.tzinfo is None:
             raise ValueError("No timezone information found in this date")
@@ -26,16 +27,14 @@ def convert_to_datetime(x: str | String | datetime) -> datetime:
         return datetime.strptime(x, "%Y-%m-%d %H:%M")
 
 
-def convert_to_date(x: str | String | date | datetime) -> date:
-    if isinstance(x, datetime):
-        return x.date()
-    if isinstance(x, date):
-        return x
-
+def convert_to_date(x: Optional[str]) -> date:
+    """Convert a date string in YYYY-MM-DD format to a date object."""
+    if x is None:
+        return date.today()  # Return today's date if input is None
     return datetime.strptime(x, "%Y-%m-%d").date()
 
 
-Url = Annotated[str | String, BeforeValidator(lambda x: session.create_url(x))]
+Url = Annotated[str, BeforeValidator(lambda x: session.create_url(x))]
 Date = Annotated[date, BeforeValidator(convert_to_date)]
 DateTime = Annotated[datetime, BeforeValidator(convert_to_datetime)]
 
@@ -43,15 +42,15 @@ DateTime = Annotated[datetime, BeforeValidator(convert_to_datetime)]
 @dataclass
 class CourseGraphic:
     type: Literal["icon"]
-    value: String
+    value: str
 
 
 @dataclass
 class ResultGraphic:
-    type: Literal["percentage"]
-    color: Literal["green", "red"]
-    value: int
-    description: String
+    """Represents the graphical part of a result."""
+
+    color: Literal["green", "red", "yellow"]
+    symbol: str
 
     @cached_property
     def achieved_points(self) -> float:
@@ -68,18 +67,18 @@ class ResultGraphic:
 
 @dataclass
 class PersonDescription:
-    startingWithFirstName: String = ""
-    startingWithLastName: String = ""
+    startingWithFirstName: str = ""
+    startingWithLastName: str = ""
 
 
 @dataclass
 class _User:
-    id: String
-    pictureHash: String
+    id: str
+    pictureHash: str
     pictureUrl: Url
     description: PersonDescription
     name: PersonDescription
-    sort: String
+    sort: str
 
 
 @dataclass
@@ -96,19 +95,19 @@ class SkoreWorkYear:
 
 @dataclass
 class Class_:
-    identifier: String
+    identifier: str
     id: int
     platformId: int
-    name: String
-    type: String
-    icon: String
+    name: str
+    type: str
+    icon: str
 
 
 @dataclass
 class Period:
     id: int
-    name: String
-    icon: String
+    name: str
+    icon: str
     skoreWorkYear: SkoreWorkYear
     isActive: bool
     class_: Class_ = Field(validation_alias=AliasChoices("class", "class_"))
@@ -117,8 +116,8 @@ class Period:
 @dataclass
 class Component:
     id: int
-    name: String
-    abbreviation: String
+    name: str
+    abbreviation: str
 
 
 Teacher = _User
@@ -128,7 +127,7 @@ Student = _User
 @dataclass
 class Course:
     id: int
-    name: String
+    name: str
     graphic: CourseGraphic
     teachers: list[Teacher]
     skoreClassId: int
@@ -139,27 +138,27 @@ class Course:
 
 @dataclass
 class Feedback:
-    text: String
+    text: str
     user: Teacher
 
 
 @dataclass
 class FeedbackFull:
-    attachments: list[String]
+    attachments: list[str]
     changedAt: DateTime
     createdAt: DateTime
-    evaluationId: String
-    id: String
+    evaluationId: str
+    id: str
     student: Student
     teacher: Teacher
-    text: String
+    text: str
 
 
 @dataclass
 class Result:
-    identifier: String
+    identifier: str
     type: Literal["normal"]
-    name: String
+    name: str
     graphic: ResultGraphic
     date: DateTime
 
@@ -176,7 +175,7 @@ class Result:
 
 @dataclass
 class ResultDetails:
-    centralTendencies: list[String]
+    centralTendencies: list[str]
     teachers: list[Teacher]
     dateChanged: DateTime
     userChanged: Teacher
@@ -190,54 +189,54 @@ class ResultWithDetails(Result):
 
 @dataclass
 class CourseCondensed:
-    name: String
-    teacher: String
+    name: str
+    teacher: str
     url: Url
 
-    descr: String = Field(repr=False, default="")
-    icon: String = Field(repr=False, default="")
+    descr: str = Field(repr=False, default="")
+    icon: str = Field(repr=False, default="")
 
 
 @dataclass
 class FutureTaskOneTask:
-    label: String
-    description: String
-    icon: String
+    label: str
+    description: str
+    icon: str
     warning: bool
-    click_handle: String
+    click_handle: str
     activityID: int
-    dateID: String
-    assignmentID: String
-    endMomentTS: String | None
-    startMomentID: String
-    endMomentID: String
-    lessonID: String
-    type: String
-    classID: String
-    course: String
+    dateID: str
+    assignmentID: str
+    endMomentTS: str | None
+    startMomentID: str
+    endMomentID: str
+    lessonID: str
+    type: str
+    classID: str
+    course: str
     date: Date
-    hourID: String
+    hourID: str
 
 
 @dataclass
 class FutureTaskOneItem:
     tasks: list[FutureTaskOneTask]
-    materials: list[String]
+    materials: list[str]
 
 
 @dataclass
 class FutureTaskOneCourse:
-    lessonID: String
-    hourID: String
-    classID: String
-    course_title: String
+    lessonID: str
+    hourID: str
+    classID: str
+    course_title: str
     items: FutureTaskOneItem
 
 
 @dataclass
 class FutureTaskOneDay:
     date: Date
-    pretty_date: String
+    pretty_date: str
     courses: list[FutureTaskOneCourse]
 
 
@@ -288,42 +287,42 @@ class FutureTasks:
 
 @dataclass
 class AgendaHour:
-    hourID: String
-    start: String
-    end: String
-    title: String
+    hourID: str
+    start: str
+    end: str
+    title: str
 
 
 @dataclass
 class AgendaLesson:
-    momentID: String
-    lessonID: String
-    hourID: String
+    momentID: str
+    lessonID: str
+    hourID: str
     date: Date
-    subject: String | None
-    course: String
-    courseTitle: String
-    classroom: String
-    classroomTitle: String
-    teacher: String
-    teacherTitle: String
-    klassen: String
-    klassenTitle: String
-    classIDs: String
-    bothStartStatus: String
-    assignmentEndStatus: String
-    testDeadlineStatus: String
-    noteStatus: String
-    note: String | None
-    date_listview: String
-    hour: String
-    activity: String
-    activityID: String | None
-    color: String
-    hourValue: String
+    subject: str | None
+    course: str
+    courseTitle: str
+    classroom: str
+    classroomTitle: str
+    teacher: str
+    teacherTitle: str
+    klassen: str
+    klassenTitle: str
+    classIDs: str
+    bothStartStatus: str
+    assignmentEndStatus: str
+    testDeadlineStatus: str
+    noteStatus: str
+    note: str | None
+    date_listview: str
+    hour: str
+    activity: str
+    activityID: str | None
+    color: str
+    hourValue: str
     components_hidden: object
-    freedayIcon: String
-    someSubjectsEmpty: String | None
+    freedayIcon: str
+    someSubjectsEmpty: str | None
 
     @property
     def hour_details(self) -> AgendaHour:
@@ -334,35 +333,35 @@ class AgendaLesson:
 
 @dataclass
 class AgendaMomentInfoAssignment:
-    startAssignment: String
-    start: String
-    end: String
-    type: String
-    description: String
-    atdescription: String
-    freedeadline: String
-    warning: String
-    assignmentInfo: String
-    assignmentDeadline: String
+    startAssignment: str
+    start: str
+    end: str
+    type: str
+    description: str
+    atdescription: str
+    freedeadline: str
+    warning: str
+    assignmentInfo: str
+    assignmentDeadline: str
 
 
 @dataclass
 class AgendaMomentInfo:
-    className: String
-    subject: String
-    materials: String | None
-    momentID: String
+    className: str
+    subject: str
+    materials: str | None
+    momentID: str
     assignments: list[AgendaMomentInfoAssignment]
 
 
 @dataclass
 class StudentSupportLink:
-    id: String
-    name: String
-    description: String
-    icon: String
+    id: str
+    name: str
+    description: str
+    icon: str
     link: Url
-    cleanLink: String
+    cleanLink: str
     isVisible: bool
 
 
@@ -370,7 +369,7 @@ class StudentSupportLink:
 class ShortMessage:
     id: int
     fromImage: Url
-    subject: String
+    subject: str
     date: DateTime
     status: int
     attachment: int
@@ -381,26 +380,26 @@ class ShortMessage:
     allowreplyenabled: bool
     hasreply: bool
     hasForward: bool
-    realBox: String
+    realBox: str
     sendDate: DateTime | None
-    from_: String = Field(validation_alias=AliasChoices("from", "from_"))
+    from_: str = Field(validation_alias=AliasChoices("from", "from_"))
 
 
 @dataclass
 class FullMessage:
     id: int
-    to: String | None
-    subject: String
+    to: str | None
+    subject: str
     date: DateTime
-    body: String
+    body: str
     status: int
     attachment: int
     unread: bool
     label: bool
-    receivers: list[String]
-    ccreceivers: list[String]
-    bccreceivers: list[String]
-    senderPicture: String
+    receivers: list[str]
+    ccreceivers: list[str]
+    bccreceivers: list[str]
+    senderPicture: str
     markedInLVS: None
     fromTeam: int
     totalNrOtherToReciviers: int
@@ -410,16 +409,16 @@ class FullMessage:
     hasReply: bool
     hasForward: bool
     sendDate: DateTime | None
-    from_: String = Field(validation_alias=AliasChoices("from", "from_"))
+    from_: str = Field(validation_alias=AliasChoices("from", "from_"))
 
 
 @dataclass
 class Attachment:
     fileID: int
-    name: String
-    mime: String
-    size: String
-    icon: String
+    name: str
+    mime: str
+    size: str
+    icon: str
     wopiAllowed: bool
     order: int
 
@@ -437,5 +436,5 @@ class MessageChanged:
 @dataclass
 class MessageDeletionStatus:
     msgID: int
-    boxType: String
+    boxType: str
     is_deleted: bool = Field(validation_alias=AliasChoices("status", "is_deleted"))

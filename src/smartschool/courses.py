@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Iterator
+import logging # Added import
+import re
+from typing import Iterator, Union, Literal
+from bs4 import BeautifulSoup, Tag
+from pydantic import BaseModel, Field, computed_field
 
 from .objects import Course, CourseCondensed
 from .session import session
+from .exceptions import SmartSchoolException, SmartschoolParsingError # Ensure casing matches definition
 
-__all__ = ["Courses", "TopNavCourses"]
+# Define data models for folders and files
+# ... (rest of the models FolderItem, FileItem etc. should be here)
+
+__all__ = ["Courses", "TopNavCourses", "CourseDocuments", "FolderItem", "FileItem", "DocumentOrFolderItem"]
 
 
 class TopNavCourses:
@@ -55,3 +63,57 @@ class Courses:
 
     def __iter__(self) -> Iterator[Course]:
         yield from self._list
+
+
+class CourseDocuments:
+    """
+    Fetches the HTML representation of the document folder structure for a specific course.
+
+    Requires a course ID to initialize. The `get_folder_html` method can optionally
+    take a folder ID (`ssID`) to fetch a specific subfolder's structure.
+
+    Example:
+    -------
+    >>> course_docs = CourseDocuments(course_id=4128)
+    >>> root_html = course_docs.get_folder_html() # Get root folder HTML
+    >>> subfolder_html = course_docs.get_folder_html(folder_id=65) # Get specific folder HTML
+    """
+    def __init__(self, course_id: int):
+        if not isinstance(course_id, int) or course_id <= 0:
+            raise ValueError("course_id must be a positive integer.")
+        self.course_id = course_id
+        self._base_path = f"/Documents/Index/Index/courseID/{self.course_id}"
+
+    def get_folder_html(self, folder_id: int | None = None) -> str:
+        """
+        Fetches the HTML content for a specific folder within the course documents.
+
+        Args:
+            folder_id: The specific folder ID (`ssID`) to fetch. If None, fetches the
+                       root document folder for the course.
+
+        Returns:
+            The raw HTML content of the folder page as a string.
+
+        Raises:
+            SmartSchoolException: If the request fails or returns an error status.
+        """
+        target_path = self._base_path
+        if folder_id is not None:
+            if not isinstance(folder_id, int) or folder_id <= 0:
+                raise ValueError("folder_id must be a positive integer if provided.")
+            target_path += f"/ssID/{folder_id}"
+
+        # Define headers - minimal set, session handles cookies
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Referer": session.create_url("/") # Referer might be important
+        }
+
+        try:
+            response = session.get(target_path, headers=headers)
+            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            return response.text
+        except Exception as e:
+            # Wrap specific request errors or re-raise generic ones
+            raise SmartSchoolException(f"Failed to fetch document folder HTML for course {self.course_id}, folder {folder_id}: {e}") from e # Ensure casing matches definition

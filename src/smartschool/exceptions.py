@@ -1,6 +1,9 @@
 class SmartSchoolException(Exception): ...
 
-# Add the missing exception class
 class SmartschoolAuthenticationError(SmartSchoolException): ...
+
+class SmartschoolParsingError(SmartSchoolException):
+    """Indicates an error occurred while parsing data from Smartschool."""
+    pass
 
 class DownloadError(SmartSchoolException): ...

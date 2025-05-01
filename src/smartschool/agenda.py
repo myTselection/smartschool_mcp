@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from abc import ABC
-from datetime import datetime
+from datetime import datetime, date, timedelta  # Added date import
 
 from ._xml_interface import SmartschoolXML_WeeklyCache
 from .objects import AgendaHour, AgendaLesson, AgendaMomentInfo
@@ -69,17 +69,23 @@ class SmartschoolLessons(AgendaPoster):
 
     @property
     def _params(self) -> dict:
-        now = (self.timestamp_to_use or datetime.now()).timestamp()
-        in_5_days = now + 5 * 24 * 3600
+        # Ensure we have a datetime object before calling timestamp()
+        dt_to_use = self.timestamp_to_use or datetime.now()
+        if isinstance(dt_to_use, date) and not isinstance(dt_to_use, datetime):
+            # Convert date to datetime (assuming start of day)
+            dt_to_use = datetime.combine(dt_to_use, datetime.min.time())
+
+        now_ts = dt_to_use.timestamp()
+        in_5_days_ts = now_ts + 5 * 24 * 3600
 
         return {
-            "startDateTimestamp": now,  # 1700045313
-            "endDateTimestamp": in_5_days,  # 1700477313
+            "startDateTimestamp": now_ts,  # Use the calculated timestamp
+            "endDateTimestamp": in_5_days_ts, # Use the calculated timestamp
             "filterType": "false",
             "filterID": "false",
             "gridType": "1",
             "classID": "0",
-            "endDateTimestampOld": in_5_days,  # 1700477313
+            "endDateTimestampOld": in_5_days_ts, # Use the calculated timestamp
             "forcedTeacher": "0",
             "forcedClass": "0",
             "forcedClassroom": "0",

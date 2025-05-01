@@ -1,9 +1,22 @@
 import logging
 
 from .agenda import SmartschoolHours, SmartschoolLessons, SmartschoolMomentInfos
-from .courses import Courses, TopNavCourses
-from .credentials import EnvCredentials, PathCredentials
-from .exceptions import DownloadError, SmartSchoolException
+from .courses import (
+    Courses,
+    TopNavCourses,
+    CourseDocuments,
+    FolderItem,
+    FileItem,
+    DocumentOrFolderItem
+)
+from .credentials import EnvCredentials, PathCredentials, Credentials
+from .exceptions import (
+    SmartschoolException,
+    SmartschoolAuthenticationError,
+    SmartschoolParsingError,
+    DownloadError
+)
+from .file_fetch import download_document
 from .logger import setup_logger
 from .messages import (
     AdjustMessageLabel,
@@ -27,10 +40,15 @@ from .student_support import StudentSupportLinks
 __all__ = [
     "PathCredentials",
     "EnvCredentials",
+    "Credentials",
     "Smartschool",
     "logger",
     "Courses",
     "TopNavCourses",
+    "CourseDocuments",
+    "FolderItem",
+    "FileItem",
+    "DocumentOrFolderItem",
     "Results",
     "Periods",
     "FutureTasks",
@@ -50,8 +68,11 @@ __all__ = [
     "MessageMoveToTrash",
     "MessageLabel",
     "ResultDetail",
+    "download_document",
     # Exceptions
-    "SmartSchoolException",
+    "SmartschoolException",
+    "SmartschoolAuthenticationError",
+    "SmartschoolParsingError",
     "DownloadError",
 ]
 
