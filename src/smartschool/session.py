@@ -79,7 +79,7 @@ class Smartschool:
             final_url = check_resp.url
             logger.debug(f"Session validity check (GET /): Status {check_resp.status_code}, Final URL: {final_url}")
 
-            if final_url.endswith("/login") or final_url.endswith("/account-verification"):
+            if final_url.endswith(("/login", "/account-verification", "/2fa")):
                 logger.debug("Session check indicates login/verification needed.")
                 # Proceed to full login flow below
             elif check_resp.status_code == 200:
@@ -108,7 +108,7 @@ class Smartschool:
                 # Landed on login page as expected, proceed with POSTing credentials
                 logger.debug("Landed on /login page, calling _do_login.")
                 final_resp = self._do_login(login_page_resp)
-            elif final_login_get_url.endswith("/account-verification"):
+            elif final_login_get_url.endswith(("/2fa","/account-verification")):
                 # GET /login redirected straight to verification
                 logger.info("GET /login redirected to verification page. Proceeding directly with verification.")
                 final_resp = self._complete_verification(login_page_resp)
@@ -121,7 +121,7 @@ class Smartschool:
 
             # 3. Final verification after login/verification attempt
             # (This block now only runs if we went through _do_login or _complete_verification above)
-            if final_resp.url.endswith("/login") or final_resp.url.endswith("/account-verification"):
+            if final_resp.url.endswith(("/login", "/account-verification", "/2fa")):
                 logger.error(f"Login/Verification process ended unexpectedly on {final_resp.url}")
                 raise SmartSchoolAuthenticationError(f"Authentication failed, ended on {final_resp.url}") # Corrected casing
             elif final_resp.status_code != 200:
@@ -145,7 +145,7 @@ class Smartschool:
         try:
             check_resp = self._session.get(self.create_url("/"), allow_redirects=True)
             check_resp.raise_for_status()
-            if check_resp.status_code == 200 and not check_resp.url.endswith(("/login", "/account-verification")):
+            if check_resp.status_code == 200 and not check_resp.url.endswith(("/login", "/account-verification", "/2fa")):
                 logger.debug("Final authentication check successful.")
                 self._session.cookies.save(ignore_discard=True) # Save potentially updated cookies
                 return True
@@ -209,7 +209,7 @@ class Smartschool:
         logger.debug(f"Login POST completed. Final URL after redirects: {login_post_resp.url}")
 
         # Check if verification is needed based on the final URL
-        if login_post_resp.url.endswith("/account-verification"):
+        if login_post_resp.url.endswith(("/2fa", "/account-verification")):
             logger.info("Account verification required, calling _complete_verification.")
             # Pass the response containing the verification page HTML
             return self._complete_verification(login_post_resp)
