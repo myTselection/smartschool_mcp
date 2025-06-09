@@ -38,23 +38,16 @@ creds = PathCredentials()
 session = Smartschool.start(creds)
 
 # Example: List courses
-print("Fetching future tasks...")
+print("Fetching results...")
 try:
-
-    for day in FutureTasks().days:
-        for course in day.courses:
-            print("Course:", course.course_title)
-            for key, value in vars(course).items():
-                print(f"{key}: {value}")
-            print("---------------")
-            for task in course.items.tasks:
-                for key, value in vars(task).items():
-                    print(f"{key}: {value}")
-                print("===============")
-            print("")
+    
+    results = list(Results())
+    for result in results:
+        for key, value in vars(result).items():
+            print(f"{key}: {value}")
 
 except Exception as e:
-    print(f"Error future tasks: {e}")
+    print(f"Error results: {e}")
 
 # ... add calls to other features as needed ...
 

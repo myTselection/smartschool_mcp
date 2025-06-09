@@ -41,13 +41,16 @@ session = Smartschool.start(creds)
 print("Fetching agenda...")
 try:
     # date of last week
-    timestamp_to_use=date.today() - timedelta(weeks=1)
+    # timestamp_to_use=date.today() - timedelta(weeks=1)
+    timestamp_to_use=date.today()
+    timestamp_to_use=date(2025, 6, 11)
     agenda = list(SmartschoolLessons(timestamp_to_use=timestamp_to_use))
     for agendalesson in agenda:
     # agendalesson = agenda[0]
     # if agendalesson:
         for key, value in vars(agendalesson).items():
             print(f"{key}: {value}")
+        print("----")
 
 except Exception as e:
     print(f"Error fetching agenda: {e}")

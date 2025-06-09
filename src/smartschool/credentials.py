@@ -59,3 +59,13 @@ class EnvCredentials(Credentials):
         self.password = os.getenv("SMARTSCHOOL_PASSWORD")
         self.main_url = os.getenv("SMARTSCHOOL_MAIN_URL")
         self.birth_date = os.getenv("SMARTSCHOOL_BIRTH_DATE")  # Add birth_date from env var
+
+
+
+@dataclass
+class AppCredentials(Credentials):
+    def __init__(self, username, password, main_url, birth_date):
+        self.username = username
+        self.password = password
+        self.main_url = main_url
+        self.birth_date = birth_date
