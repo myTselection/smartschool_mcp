@@ -7,9 +7,10 @@ import time
 import logging
 import datetime # Added import
 import requests # Added import
-import httpx
-import http.cookiejar
-# from requests import Session
+# import httpx
+# import http.cookiejar
+from http.cookiejar import LWPCookieJar
+from requests import Session
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
@@ -51,24 +52,28 @@ def _handle_cookies_and_login(func):
 class Smartschool:
     creds: Credentials = None
     
-    _session = httpx.Client(http2=True)
-    # _session: Session = field(init=False, default_factory=Session)
+    # _session = httpx.Client(http2=True)
+    _session: Session = field(init=False, default_factory=Session)
     # Remove already_logged_on flag
     # already_logged_on: bool = field(init=False, default=None) # REMOVED
 
     def __post_init__(self) -> None:
         
-        # Load cookies using LWPCookieJar
-        self.cookiejar = http.cookiejarLWPCookieJar(self.cookie_file)
+        self._session.cookies = LWPCookieJar(self.cookie_file)
         with contextlib.suppress(FileNotFoundError):
-            self.cookiejar.load(ignore_discard=True, ignore_expires=True)
-            # Convert to httpx format
-            client_cookies = {}
-            for cookie in self.cookiejar:
-                client_cookies[cookie.name] = cookie.value
+            self._session.cookies.load(ignore_discard=True)
+            
+        # # Load cookies using LWPCookieJar
+        # self.cookiejar = http.cookiejarLWPCookieJar(self.cookie_file)
+        # with contextlib.suppress(FileNotFoundError):
+        #     self.cookiejar.load(ignore_discard=True, ignore_expires=True)
+        #     # Convert to httpx format
+        #     client_cookies = {}
+        #     for cookie in self.cookiejar:
+        #         client_cookies[cookie.name] = cookie.value
 
-            # Initialize httpx client with cookies
-            self._session = httpx.Client(http2=True, cookies=client_cookies)
+        #     # Initialize httpx client with cookies
+        #     self._session = httpx.Client(http2=True, cookies=client_cookies)
 
         
         # self._session.headers.update({'Content-Type': 'application/json',
@@ -114,7 +119,8 @@ class Smartschool:
         try:
             # Use allow_redirects=True to see the final destination
             # https: follow_redirects=False
-            check_resp = self._session.get(self.create_url("/"), follow_redirects=True)
+            # check_resp = self._session.get(self.create_url("/"), follow_redirects=True)
+            check_resp = self._session.get(self.create_url("/"), allow_redirects=True)
             check_resp.raise_for_status() # Check for HTTP errors
 
             final_url = str(check_resp.url)
@@ -140,7 +146,8 @@ class Smartschool:
         logger.debug("Performing full login/verification flow.")
         try:
             # Get login page first, follow redirects to see where we land
-            login_page_resp = self._session.get(self.create_url("/login"), follow_redirects=True)
+            # login_page_resp = self._session.get(self.create_url("/login"), follow_redirects=True)
+            login_page_resp = self._session.get(self.create_url("/login"), allow_redirects=True)
             login_page_resp.raise_for_status()
             final_login_get_url = str(login_page_resp.url)
             logger.debug(f"GET /login resulted in final URL: {final_login_get_url}")
@@ -174,30 +181,29 @@ class Smartschool:
                 raise SmartSchoolAuthenticationError(f"Authentication failed, status {final_resp.status_code} at {final_resp.url}") # Corrected casing
             else:
                 logger.debug("Login/Verification process completed successfully after _do_login/_complete_verification.")
-                # After request
-                for cookie in self._session.cookies.jar:
-                    self.cookiejar.set_cookie(http.cookiejar.Cookie(
-                        version=0,
-                        name=cookie.name,
-                        value=cookie.value,
-                        port=None,
-                        port_specified=False,
-                        domain=cookie.domain,
-                        domain_specified=True,
-                        domain_initial_dot=False,
-                        path=cookie.path,
-                        path_specified=True,
-                        secure=cookie.secure,
-                        expires=None,
-                        discard=False,
-                        comment=None,
-                        comment_url=None,
-                        rest={},
-                        rfc2109=False
-                    ))
-
-                self.cookiejar.save(ignore_discard=True)
-                # self._session.cookies.save(ignore_discard=True)
+                self._session.cookies.save(ignore_discard=True)
+                # # After request
+                # for cookie in self._session.cookies.jar:
+                #     self.cookiejar.set_cookie(http.cookiejar.Cookie(
+                #         version=0,
+                #         name=cookie.name,
+                #         value=cookie.value,
+                #         port=None,
+                #         port_specified=False,
+                #         domain=cookie.domain,
+                #         domain_specified=True,
+                #         domain_initial_dot=False,
+                #         path=cookie.path,
+                #         path_specified=True,
+                #         secure=cookie.secure,
+                #         expires=None,
+                #         discard=False,
+                #         comment=None,
+                #         comment_url=None,
+                #         rest={},
+                #         rfc2109=False
+                #     ))
+                # self.cookiejar.save(ignore_discard=True)
 
         except Exception as e:
             logger.exception("Exception during login/verification process.")
@@ -211,7 +217,8 @@ class Smartschool:
         """Helper to perform a final GET / check."""
         logger.debug("Performing _check_final_authentication (GET /)")
         try:
-            check_resp = self._session.get(self.create_url("/"), follow_redirects=True)
+            # check_resp = self._session.get(self.create_url("/"), follow_redirects=True)
+            check_resp = self._session.get(self.create_url("/"), allow_redirects=True)
             check_resp.raise_for_status()
             if check_resp.status_code == 200 and not str(check_resp.url).endswith(("/login", "/account-verification", "/2fa")):
                 logger.debug("Final authentication check successful.")
@@ -272,7 +279,8 @@ class Smartschool:
         # POST the login form, following redirects
         login_post_url = str(login_page_response.url) # Post back to the same URL we got the form from
         logger.debug(f"Posting login form to {login_post_url}")
-        login_post_resp = self._session.post(login_post_url, data=data, follow_redirects=True)
+        # login_post_resp = self._session.post(login_post_url, data=data, follow_redirects=True)
+        login_post_resp = self._session.post(login_post_url, data=data, allow_redirects=True)
         login_post_resp.raise_for_status() # Check for HTTP errors after redirects
         logger.debug(f"Login POST completed. Final URL after redirects: {login_post_resp.url}")
 
@@ -343,7 +351,8 @@ class Smartschool:
 
         # POST the verification form, following redirects
         logger.info(f"POSTing verification data to {current_verification_url}")
-        verification_post_resp = self._session.post(current_verification_url, data=verification_data, follow_redirects=True)
+        # verification_post_resp = self._session.post(current_verification_url, data=verification_data, follow_redirects=True)
+        verification_post_resp = self._session.post(current_verification_url, data=verification_data, allow_redirects=True)
         verification_post_resp.raise_for_status() # Check for HTTP errors after redirects
         logger.debug(f"Verification POST completed. Final URL: {verification_post_resp.url}")
 
@@ -359,7 +368,8 @@ class Smartschool:
         """
         logger.debug("Entering _complete_verification_2fa")
         
-        check_resp = self._session.get(self.create_url("/2fa/api/v1/config"), follow_redirects=True)
+        # check_resp = self._session.get(self.create_url("/2fa/api/v1/config"), follow_redirects=True)
+        check_resp = self._session.get(self.create_url("/2fa/api/v1/config"), allow_redirects=True)
         check_resp.raise_for_status()
         if check_resp.status_code == 200:
             supported_authentication_methods = json.loads(check_resp.text)
@@ -371,12 +381,10 @@ class Smartschool:
         totp = pyotp.TOTP(self.creds.mfa)
         code = totp.now()
         # google2fa = {'google2fa':code}
-        google2fa = '{"google2fa":"%s"}' % code
-
-        print("google2fa", google2fa)
-        
+        google2fa = '{"google2fa":"%s"}' % code        
         # self._session.headers['Content-Type'] = "application/x-www-form-urlencoded"
-        googleAuthenticatorResp = self._session.post(self.create_url("/2fa/api/v1/google-authenticator"), data=google2fa, follow_redirects=True)
+        # googleAuthenticatorResp = self._session.post(self.create_url("/2fa/api/v1/google-authenticator"), data=google2fa, follow_redirects=True)
+        googleAuthenticatorResp = self._session.post(self.create_url("/2fa/api/v1/google-authenticator"), data=google2fa, allow_redirects=True)
         googleAuthenticatorResp.raise_for_status()
         
         # Return the final response after the verification POST
