@@ -330,10 +330,10 @@ class Smartschool:
             raise SmartSchoolAuthenticationError("Could not find security question field in verification form") # Corrected casing
 
         # Ensure birth date is present and correctly formatted
-        if not hasattr(self.creds, 'birth_date') or not self.creds.birth_date:
+        if not hasattr(self.creds, 'mfa') or not self.creds.mfa:
             raise SmartSchoolAuthenticationError("Birth date is required for verification but not provided in credentials") # Corrected casing
 
-        birth_date_str = self.creds.birth_date
+        birth_date_str = self.creds.mfa
         if isinstance(birth_date_str, datetime.date):
             birth_date_str = birth_date_str.strftime('%Y-%m-%d')
             logger.debug(f"Formatted birth date from date object to: {birth_date_str}")
