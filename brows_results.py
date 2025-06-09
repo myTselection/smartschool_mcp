@@ -5,10 +5,12 @@ import logging
 from datetime import date # Added for lesson example
 from datetime import date, timedelta
 
+
 # Add the src directory to the Python path
 src_path = os.path.join(os.path.dirname(__file__), 'src')
 if (src_path not in sys.path):
     sys.path.insert(0, src_path)
+
 
 from smartschool import (
     Smartschool,
@@ -35,19 +37,19 @@ creds = PathCredentials()
 # creds = PathCredentials("path/to/your/credentials.yml")
 
 # Start the session (handles login)
-session = Smartschool.start(creds)
+smartschoolSession = Smartschool(creds)
 
 # Example: List courses
 print("Fetching results...")
-try:
+# try:
     
-    results = list(Results())
-    for result in results:
-        for key, value in vars(result).items():
-            print(f"{key}: {value}")
+results = list(Results(smartschoolSession._session))
+for result in results:
+    for key, value in vars(result).items():
+        print(f"{key}: {value}")
 
-except Exception as e:
-    print(f"Error results: {e}")
+# except Exception as e:
+    # print(f"Error results: {e}")
 
 # ... add calls to other features as needed ...
 

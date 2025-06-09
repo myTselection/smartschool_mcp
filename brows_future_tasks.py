@@ -35,26 +35,26 @@ creds = PathCredentials()
 # creds = PathCredentials("path/to/your/credentials.yml")
 
 # Start the session (handles login)
-session = Smartschool.start(creds)
+# session = Smartschool.start(creds)
+smartschoolSession = Smartschool(creds)
+
+
 
 # Example: List courses
 print("Fetching future tasks...")
-try:
-
-    for day in FutureTasks().days:
-        for course in day.courses:
-            print("Course:", course.course_title)
-            for key, value in vars(course).items():
+futureTasks = FutureTasks(smartschoolSession)
+for day in futureTasks.days:
+    for course in day.courses:
+        print("Course:", course.course_title)
+        for key, value in vars(course).items():
+            print(f"{key}: {value}")
+        print("---------------")
+        for task in course.items.tasks:
+            for key, value in vars(task).items():
                 print(f"{key}: {value}")
-            print("---------------")
-            for task in course.items.tasks:
-                for key, value in vars(task).items():
-                    print(f"{key}: {value}")
-                print("===============")
-            print("")
+            print("===============")
+        print("")
 
-except Exception as e:
-    print(f"Error future tasks: {e}")
 
 # ... add calls to other features as needed ...
 

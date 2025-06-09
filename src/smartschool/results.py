@@ -3,7 +3,7 @@ from typing import Iterator
 
 from .exceptions import SmartSchoolDownloadError
 from .objects import Result, ResultWithDetails
-from .session import session
+# from .session import session
 
 __all__ = ["Results", "ResultDetail"]
 
@@ -24,10 +24,12 @@ class Results:
     Repetitie hoofdstuk 1
 
     """
+    def __init__(self, session):
+        self.session = session
 
     def __iter__(self) -> Iterator[Result]:
         for page_nr in count(start=1):  # pragma: no branch
-            downloaded_webpage = session.get(f"/results/api/v1/evaluations/?pageNumber={page_nr}&itemsOnPage={RESULTS_PER_PAGE}")
+            downloaded_webpage = self.session.get(f"/results/api/v1/evaluations/?pageNumber={page_nr}&itemsOnPage={RESULTS_PER_PAGE}")
             if not downloaded_webpage or not downloaded_webpage.content:
                 raise SmartSchoolDownloadError("No JSON was returned for the results?!")
 
@@ -40,11 +42,12 @@ class Results:
 
 
 class ResultDetail:
-    def __init__(self, result_id: str):
+    def __init__(self, result_id: str, session):
         self.result_id = result_id
+        self.session = session
 
     def get(self) -> ResultWithDetails:
-        downloaded_webpage = session.get(f"/results/api/v1/evaluations/{self.result_id}")
+        downloaded_webpage = self.session.get(f"/results/api/v1/evaluations/{self.result_id}")
         if not downloaded_webpage or not downloaded_webpage.content:
             raise SmartSchoolDownloadError("No JSON was returned for the details?!")
 

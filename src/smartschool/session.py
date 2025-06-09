@@ -50,62 +50,35 @@ def _handle_cookies_and_login(func):
 
 @dataclass
 class Smartschool:
-    creds: Credentials = None
+    creds: Credentials
+    session: Session = field(init=False, default_factory=Session)
     
     # _session = httpx.Client(http2=True)
-    _session: Session = field(init=False, default_factory=Session)
+    
     # Remove already_logged_on flag
     # already_logged_on: bool = field(init=False, default=None) # REMOVED
-
-    def __post_init__(self) -> None:
-        
-        self._session.cookies = LWPCookieJar(self.cookie_file)
-        with contextlib.suppress(FileNotFoundError):
-            self._session.cookies.load(ignore_discard=True)
-            
-        # # Load cookies using LWPCookieJar
-        # self.cookiejar = http.cookiejarLWPCookieJar(self.cookie_file)
-        # with contextlib.suppress(FileNotFoundError):
-        #     self.cookiejar.load(ignore_discard=True, ignore_expires=True)
-        #     # Convert to httpx format
-        #     client_cookies = {}
-        #     for cookie in self.cookiejar:
-        #         client_cookies[cookie.name] = cookie.value
-
-        #     # Initialize httpx client with cookies
-        #     self._session = httpx.Client(http2=True, cookies=client_cookies)
-
-        
-        # self._session.headers.update({'Content-Type': 'application/json',
-        #                             #   "Origin": "https://ruusbroec.smartschool.be",
-        #                             #   "Referer": "https://ruusbroec.smartschool.be/",
-        #                               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-        #                               "Sec-Fetch-Dest": "empty",
-        #                               "Sec-Fetch-Mode": "cors",
-        #                               "Sec-Fetch-Site": "same-origin",
-        #                               "Sec-Fetch-User": "?1",
-        #                             #   "sec-ch-ua-platform": "Windows",
-        #                               "Accept": "application/json, text/plain, */*",
-        #                               "Accept-Encoding": "gzip, deflate, br, zstd",
-        #                               "Accept-Language": "en-US,en;q=0.9"})
-        
-        # self._session.headers.update({'Content-Type': 'application/json',
-        #                               "Origin": "https://ruusbroec.smartschool.be",
-        #                               "Referer": "https://ruusbroec.smartschool.be/",
-        #                               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-        #                               "Sec-Fetch-Dest": "empty",
-        #                               "Sec-Fetch-Mode": "cors",
-        #                               "Sec-Fetch-Site": "same-origin",
-        #                               "Sec-Fetch-User": "?1",
-        #                               "sec-ch-ua-platform": "Windows",
-        #                               "Accept": "application/json, text/plain, */*",
-        #                               "Accept-Encoding": "gzip, deflate, br, zstd",
-        #                               "Accept-Language": "en-US,en;q=0.9"})
+    def __post_init__(self):
+        self.creds.validate()
 
     # Re-add create_url method
     def create_url(self, path: str) -> str:
         """Create a full URL from a path."""
         return urljoin(self._url, path)
+    
+    def post(self, url, *args, **kwargs) -> Response:
+        
+        if self.creds is None:
+            raise RuntimeError("Please initiate smartschool first via: `Smartschool(PathCredentials())`")
+
+        self._try_login() # This now handles login and ensures session validity
+        return self._session.post(self.create_url(url), *args, **kwargs)
+    
+    def get(self, url, *args, **kwargs) -> Response:
+        if self.creds is None:
+            raise RuntimeError("Please initiate smartschool first via: `Smartschool(PathCredentials())`")
+
+        self._try_login() # This now handles login and ensures session validity
+        return self._session.get(self.create_url(url), *args, **kwargs)
 
     def _try_login(self) -> None:
         """
@@ -132,7 +105,7 @@ class Smartschool:
             elif check_resp.status_code == 200:
                  logger.debug("Session appears to be valid based on GET /. Skipping login.")
                  # Save cookies just in case they were updated by the check
-                 self._session.cookies.save(ignore_discard=True)
+                #  self._session.cookies.save(ignore_discard=True)
                  return # Session is valid
             else:
                  logger.warning(f"Session check GET / resulted in unexpected state: Status {check_resp.status_code}, URL {final_url}")
@@ -168,7 +141,7 @@ class Smartschool:
                 # GET /login redirected somewhere else (likely '/', indicating already logged in)
                 logger.info(f"GET /login redirected to {final_login_get_url}. Assuming session is valid and complete.")
                 # We trust this redirect indicates success. Save cookies and return.
-                self._session.cookies.save(ignore_discard=True)
+                # self._session.cookies.save(ignore_discard=True)
                 return # Assume success based on redirect
 
             # 3. Final verification after login/verification attempt
@@ -181,7 +154,7 @@ class Smartschool:
                 raise SmartSchoolAuthenticationError(f"Authentication failed, status {final_resp.status_code} at {final_resp.url}") # Corrected casing
             else:
                 logger.debug("Login/Verification process completed successfully after _do_login/_complete_verification.")
-                self._session.cookies.save(ignore_discard=True)
+                # self._session.cookies.save(ignore_discard=True)
                 # # After request
                 # for cookie in self._session.cookies.jar:
                 #     self.cookiejar.set_cookie(http.cookiejar.Cookie(
@@ -222,7 +195,7 @@ class Smartschool:
             check_resp.raise_for_status()
             if check_resp.status_code == 200 and not str(check_resp.url).endswith(("/login", "/account-verification", "/2fa")):
                 logger.debug("Final authentication check successful.")
-                self._session.cookies.save(ignore_discard=True) # Save potentially updated cookies
+                # self._session.cookies.save(ignore_discard=True) # Save potentially updated cookies
                 return True
             else:
                 logger.error(f"Final authentication check failed: Status {check_resp.status_code}, URL {check_resp.url}")
@@ -390,60 +363,15 @@ class Smartschool:
         # Return the final response after the verification POST
         return googleAuthenticatorResp
 
-    @classmethod
-    def start(cls, creds: Credentials) -> Self:
-        global session
+    # @classmethod
+    # def start(cls, creds: Credentials) -> Self:
+    #     global session
 
-        creds.validate()
-        session.creds = creds
+    #     creds.validate()
+    #     session.creds = creds
 
-        return session
+    #     return session
 
-    @property
-    def cookie_file(self) -> Path:
-        return Path.cwd() / "cookies.txt"
-        
-        if not inputs:
-            # Fall back to finding by ID if name attribute is not present
-            inputs = get_all_values_from_form(html, 'form:has(input#account_verification_form__token)')
-        
-        if not inputs:
-            raise RuntimeError("Could not find verification form fields")
-        
-        # Prepare the verification data
-        verification_data = {}
-        security_question_field = None
-        
-        for input_ in inputs:
-            # The security question field typically contains "_security_question_answer" in its name
-            if "_security_question_answer" in input_["name"]:
-                security_question_field = input_["name"]
-            else:
-                # Copy all other fields with their values
-                verification_data[input_["name"]] = input_["value"]
-        
-        if not security_question_field:
-            raise RuntimeError("Could not find security question field in verification form")
-        
-        # Add the birth date to the verification data
-        if not hasattr(self.creds, 'birth_date') or not self.creds.birth_date:
-            raise RuntimeError("Birth date is required for verification but not provided in credentials")
-        
-        verification_data[security_question_field] = self.creds.birth_date
-        
-        # Submit the verification form
-        verification_url = response.url
-        verification_response = self.post(verification_url, data=verification_data)
-        
-        # Check if verification was successful
-        if self._is_verification_page(verification_response):
-            raise RuntimeError(f"Verification failed. Check that the birth date is correct and in YYYY-MM-DD format. Response text: {verification_response.text[:500]}...") # Modified existing error
-
-        # --- Verification Step 4: Check URL after submitting verification ---
-        if verification_response.url.endswith("/login"):
-             raise RuntimeError("Verification submitted, but ended up back on login page. Login failed.") # Added check
-
-        return verification_response
 
     @cached_property
     def _url(self) -> str:
@@ -487,17 +415,17 @@ class Smartschool:
              logger.exception(f"Unexpected error parsing JSON response from {r.url}")
              raise # Re-raise other unexpected errors
 
-    # Original post and get methods (before decoration)
-    # These are needed so the decorator can wrap them.
-    def post(self, url, *args, **kwargs) -> Response:
-        return self._session.post(self.create_url(url), *args, **kwargs)
+    # # Original post and get methods (before decoration)
+    # # These are needed so the decorator can wrap them.
+    # def post(self, url, *args, **kwargs) -> Response:
+    #     return self._session.post(self.create_url(url), *args, **kwargs)
 
-    def get(self, url, *args, **kwargs) -> Response:
-        return self._session.get(self.create_url(url), *args, **kwargs)
+    # def get(self, url, *args, **kwargs) -> Response:
+    #     return self._session.get(self.create_url(url), *args, **kwargs)
 
 # Apply decorator to post and get methods *after* the decorator is defined
 # Ensure the methods exist on the class *before* this step
-Smartschool.post = _handle_cookies_and_login(Smartschool.post)
-Smartschool.get = _handle_cookies_and_login(Smartschool.get)
+# Smartschool.post = _handle_cookies_and_login(Smartschool.post)
+# Smartschool.get = _handle_cookies_and_login(Smartschool.get)
 
-session: Smartschool = Smartschool()
+# session: Smartschool = Smartschool()

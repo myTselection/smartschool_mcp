@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import os
 from abc import ABC
-from dataclasses import dataclass, field
+# from dataclasses import dataclass, field
+from pydantic.dataclasses import Field, dataclass
 from pathlib import Path
 
 import yaml
 
-
-class Credentials(ABC):
-    username: str
-    password: str
-    main_url: str
-    mfa: str
+@dataclass
+class Credentials:
+    username: str = Field(default=None, init=False)
+    password: str = Field(default=None, init=False)
+    main_url: str = Field(default=None, init=False)
+    mfa: str = Field(default=None, init=False)
 
     other_info: dict | None = None
 
@@ -38,7 +39,7 @@ class Credentials(ABC):
 
 @dataclass
 class PathCredentials(Credentials):
-    filename: str | Path = field(default=Path.cwd().joinpath("credentials.yml"))
+    filename: str | Path = Field(default=Path.cwd().joinpath("credentials.yml"))
 
     def __post_init__(self):
         self.filename = Path(self.filename)
@@ -59,13 +60,3 @@ class EnvCredentials(Credentials):
         self.password = os.getenv("SMARTSCHOOL_PASSWORD")
         self.main_url = os.getenv("SMARTSCHOOL_MAIN_URL")
         self.mfa = os.getenv("SMARTSCHOOL_MFA")  # Add birth_date from env var
-
-
-
-@dataclass
-class AppCredentials(Credentials):
-    def __init__(self, username, password, main_url, mfa):
-        self.username = username
-        self.password = password
-        self.main_url = main_url
-        self.mfa = mfa

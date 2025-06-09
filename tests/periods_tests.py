@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
 from smartschool import Periods
+from smartschool.session import Smartschool
+from smartschool.credentials import EnvCredentials
 
 
 def test_periods_happy_flow():
-    sut = list(Periods())
+    smartschoolSession = Smartschool(EnvCredentials())
+    sut = list(Periods(smartschoolSession._session))
 
     assert len(sut) == 2
 

@@ -1,8 +1,10 @@
 from smartschool import AdjustMessageLabel, Attachments, MarkMessageUnread, Message, MessageHeaders, MessageLabel, MessageMoveToArchive, MessageMoveToTrash
-
+from smartschool.session import Smartschool
+from smartschool.credentials import EnvCredentials
 
 def test_messages_happy_flow():
-    sut = list(MessageHeaders())
+    smartschoolSession = Smartschool(EnvCredentials())
+    sut = list(MessageHeaders(smartschoolSession._session))
 
     assert len(sut) == 2
     assert sut[0].subject == "Re: LO les"

@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 
 from ._xml_interface import SmartschoolXML, SmartschoolXML_NoCache
 from .objects import Attachment, FullMessage, MessageChanged, MessageDeletionStatus, ShortMessage
-from .session import session
+# from .session import session
 
 __all__ = [
     "SortField",
@@ -74,12 +74,13 @@ class MessageHeaders(_MessagesPoster, SmartschoolXML_NoCache):
 
     def __init__(
         self,
+        session,
         box_type: BoxType = BoxType.INBOX,
         sort_by: SortField = SortField.DATE,
         sort_order: SortOrder = SortOrder.DESC,
-        already_seen_message_ids: list[int] | None = None,
+        already_seen_message_ids: list[int] | None = None
     ):
-        super().__init__()
+        super().__init__(session)
 
         self.box_type = box_type
         self.sort_by = sort_by
@@ -264,13 +265,14 @@ class MessageMoveToArchive:
     It's not following the XML protocol... Providing the same interface as the other XMLs though.
     """
 
-    def __init__(self, msg_id: int | list[int]):
+    def __init__(self, msg_id: int | list[int], session):
         super().__init__()
 
         if not isinstance(msg_id, list):
             msg_id = [msg_id]
 
         self.msg_ids = msg_id
+        self.session = session
 
     def get(self) -> MessageChanged:
         return next(iter(self))
@@ -278,7 +280,7 @@ class MessageMoveToArchive:
     def __iter__(self) -> Iterator[MessageChanged]:
         construction = "&".join("msgIDs%5B%5D=" + quote_plus(str(msg_id)) for msg_id in self.msg_ids)
 
-        resp = session.post(
+        resp = self.session.post(
             "/Messages/Xhr/archivemessages",
             data=construction,
             headers={

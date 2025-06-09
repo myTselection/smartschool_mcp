@@ -77,7 +77,7 @@ def get_user_choice(prompt: str, max_value: int) -> str | int | None:
              return 'q'
 
 
-def browse_documents(selected_course: Course): # Type hint updated to Course
+def browse_documents(selected_course: Course, session): # Type hint updated to Course
     """Main loop for browsing folders and downloading files."""
     current_path_items: list[FolderItem] = [] # Stores the FolderItems representing the path
     # current_folder_id now represents the parentID for listing, or the ssID for downloading
@@ -95,7 +95,8 @@ def browse_documents(selected_course: Course): # Type hint updated to Course
             items = browse_course_documents(
                 course_id=selected_course.id,
                 folder_id=parent_id_to_fetch,
-                ss_id=selected_course.class_.platformId # Use platformId here
+                ss_id=selected_course.class_.platformId, # Use platformId here,
+                session=session
             )
             items.sort(key=lambda x: (0 if isinstance(x, FolderItem) else 1, x.name)) # Folders first, then alphabetical
         except SmartSchoolAuthenticationError as e:
@@ -148,6 +149,7 @@ def browse_documents(selected_course: Course): # Type hint updated to Course
                         course_id=selected_course.id, # Use course ID from selected course
                         doc_id=selected_item.id,      # Use file's ID (docID)
                         ss_id=containing_folder_id,   # Use the ID of the folder we are currently in (as the containing folder ID)
+                        session=session,
                         target_path=target_file,
                         overwrite=False
                     )
@@ -197,7 +199,7 @@ def main():
             return
 
         # --- Browse Documents ---
-        browse_documents(selected_course)
+        browse_documents(selected_course, session)
 
     except (SmartSchoolAuthenticationError, FileNotFoundError) as e:
         logger.critical(f"Initialization failed: {e}")

@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from .exceptions import SmartSchoolAuthenticationError, SmartSchoolException
 # Import models from objects.py
 from .objects import FileItem, FolderItem, DocumentOrFolderItem
-from .session import session
+# from .session import session
 
 if TYPE_CHECKING:  # pragma: no cover
     pass
@@ -47,6 +47,7 @@ def browse_course_documents(
     course_id: int,
     folder_id: int,
     ss_id: int,
+    session
 ) -> List[DocumentOrFolderItem]: # Updated return type hint
     """
     Browses the contents (files and subfolders) of a specific folder
@@ -160,6 +161,7 @@ def download_document(
     course_id: int,
     doc_id: int,
     ss_id: int,
+    session,
     target_path: str | Path,
     overwrite: bool = False
 ) -> Path:

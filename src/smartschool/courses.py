@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup, Tag
 # from pydantic import BaseModel, Field, computed_field
 
 from .objects import Course, CourseCondensed
-from .session import session
+# from .session import session
 from .exceptions import SmartSchoolException, SmartSchoolParsingError, SmartSchoolDownloadError
 # Import the models from objects.py now
 from .objects import FileItem, FolderItem, DocumentOrFolderItem
@@ -39,10 +39,12 @@ class TopNavCourses:
     bibliotheek
 
     """
+    def __init__(self, session):
+        self.session = session
 
     @cached_property
     def _list(self) -> list[CourseCondensed]:
-        return [CourseCondensed(**course) for course in session.json("/Topnav/getCourseConfig", method="post")["own"]]
+        return [CourseCondensed(**course) for course in self.session.json("/Topnav/getCourseConfig", method="post")["own"]]
 
     def __iter__(self) -> Iterator[CourseCondensed]:
         yield from self._list
@@ -64,10 +66,12 @@ class Courses:
     Biologie
 
     """
+    def __init__(self, session):
+        self.session = session
 
     @cached_property
     def _list(self) -> list[Course]:
-        return [Course(**course) for course in session.json("/results/api/v1/courses/")]
+        return [Course(**course) for course in self.session.json("/results/api/v1/courses/")]
 
     def __iter__(self) -> Iterator[Course]:
         yield from self._list
@@ -91,11 +95,12 @@ class CourseDocuments:
     >>> for item in items:
     >>>     print(f"{item.type}: {item.name}")
     """
-    def __init__(self, course_id: int):
+    def __init__(self, course_id: int, session):
         if not isinstance(course_id, int) or course_id <= 0:
             raise ValueError("course_id must be a positive integer.")
         self.course_id = course_id
         self._base_path = f"/Documents/Index/Index/courseID/{self.course_id}"
+        self.session = session
 
     def get_folder_html(self, folder_id: int | None = None) -> str:
         """
@@ -120,11 +125,11 @@ class CourseDocuments:
         # Define headers - minimal set, session handles cookies
         headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Referer": session.create_url("/") # Referer might be important
+            "Referer": self.session.create_url("/") # Referer might be important
         }
 
         try:
-            response = session.get(target_path, headers=headers)
+            response = self.session.get(target_path, headers=headers)
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.text
         except Exception as e:

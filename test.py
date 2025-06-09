@@ -7,6 +7,8 @@ from datetime import date, timedelta
 src_path = os.path.join(os.path.dirname(__file__), 'src')
 sys.path.insert(0, src_path)
 
+from smartschool.session import Smartschool
+from smartschool.credentials import EnvCredentials
 from smartschool import (
     Smartschool,
     PathCredentials,
@@ -82,7 +84,8 @@ def test_courses():
             break
 
 def test_topnav_courses():
-    topnav_courses = list(TopNavCourses())
+    smartschoolSession = Smartschool(EnvCredentials())
+    topnav_courses = list(TopNavCourses(smartschoolSession._session))
     print(f"Found {len(topnav_courses)} top-nav courses/links:")
     for i, course in enumerate(topnav_courses):
         print(f"- {course.name} (Teacher: {course.teacher}, URL: {course.url})")
@@ -91,7 +94,8 @@ def test_topnav_courses():
             break
 
 def test_results():
-    results = list(Results())
+    smartschoolSession = Smartschool(EnvCredentials())
+    results = list(Results(smartschoolSession._session))
     print(f"Found {len(results)} results:")
     for i, result in enumerate(results):
         course_names = ', '.join(c.name for c in result.courses)
@@ -102,14 +106,16 @@ def test_results():
             break
 
 def test_periods():
-    periods = Periods()
+    smartschoolSession = Smartschool(EnvCredentials())
+    periods = Periods(smartschoolSession._session)
     print(f"Found {len(list(periods))} periods:")
     for period in periods:
         # Corrected attribute access for date range
         print(f"- {period.name} (ID: {period.id}, Start: {period.skoreWorkYear.dateRange.start}, End: {period.skoreWorkYear.dateRange.end})")
 
 def test_future_tasks():
-    future_tasks_data = FutureTasks()
+    smartschoolSession = Smartschool(EnvCredentials())
+    future_tasks_data = FutureTasks(smartschoolSession._session)
     print(f"Found {len(future_tasks_data.days)} days with future tasks:")
     days_printed = 0
     for day in future_tasks_data.days:
@@ -203,7 +209,8 @@ def test_moment_infos(moment_ids):
 
 
 def test_hours():
-    hours = AgendaHours()
+    smartschoolSession = Smartschool(EnvCredentials())
+    hours = AgendaHours(smartschoolSession._session)
     print(f"Found {len(list(hours))} defined hours:")
     for hour in hours:
         # Corrected attribute access from hour.name to hour.title

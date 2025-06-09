@@ -9,7 +9,7 @@ from .courses import (
     FileItem,
     DocumentOrFolderItem
 )
-from .credentials import EnvCredentials, PathCredentials, Credentials, AppCredentials
+from .credentials import EnvCredentials, PathCredentials, Credentials
 from .exceptions import (
     SmartSchoolException, # Corrected casing
     SmartSchoolAuthenticationError, # Corrected casing
@@ -40,7 +40,6 @@ from .student_support import StudentSupportLinks
 __all__ = [
     "PathCredentials",
     "EnvCredentials",
-    "AppCredentials",
     "Credentials",
     "Smartschool",
     "logger",

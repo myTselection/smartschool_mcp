@@ -8,7 +8,7 @@ from xml.etree import ElementTree as ET
 from xml.sax.saxutils import quoteattr
 
 from .common import xml_to_dict
-from .session import session
+# from .session import session
 
 if TYPE_CHECKING:  # pragma: no cover
     from datetime import datetime
@@ -30,6 +30,10 @@ class _SmartschoolXMLMeta(ABCMeta):
 
 class SmartschoolXML(ABC, metaclass=_SmartschoolXMLMeta):
     cache: dict  # Type hint for the dynamically added attribute
+
+    
+    def __init__(self, session):
+        self.session = session
 
     def _construct_command(self) -> str:
         txt = "<request><command>"
@@ -77,7 +81,7 @@ class SmartschoolXML(ABC, metaclass=_SmartschoolXMLMeta):
             return self._get_from_cache()
         
         # print(f"Request: {self._url} : {self._construct_command()}")
-        response = session.post(
+        response = self.session.post(
             self._url,
             data={
                 "command": self._construct_command(),
