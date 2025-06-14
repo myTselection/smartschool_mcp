@@ -42,8 +42,10 @@ print("Fetching agenda...")
 try:
     # date of last week
     # timestamp_to_use=date.today() - timedelta(weeks=1)
-    timestamp_to_use=date.today()
-    timestamp_to_use=date(2025, 6, 11)
+    # timestamp_to_use=date.today()
+    timestamp_to_use=date.today() + timedelta(days=1)
+    # timestamp_to_use=date(2025, 6, 11)
+    # timestamp_to_use=None
     agenda = list(SmartschoolLessons(timestamp_to_use=timestamp_to_use))
     for agendalesson in agenda:
     # agendalesson = agenda[0]
