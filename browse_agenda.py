@@ -35,27 +35,24 @@ creds = PathCredentials()
 # creds = PathCredentials("path/to/your/credentials.yml")
 
 # Start the session (handles login)
-session = Smartschool.start(creds)
+# session = Smartschool.start(creds)
+smartschoolSession = Smartschool(creds=creds)
 
 # Example: List courses
 print("Fetching agenda...")
-try:
-    # date of last week
-    # timestamp_to_use=date.today() - timedelta(weeks=1)
-    # timestamp_to_use=date.today()
-    timestamp_to_use=date.today() + timedelta(days=1)
-    # timestamp_to_use=date(2025, 6, 11)
-    # timestamp_to_use=None
-    agenda = list(SmartschoolLessons(timestamp_to_use=timestamp_to_use))
-    for agendalesson in agenda:
-    # agendalesson = agenda[0]
-    # if agendalesson:
-        for key, value in vars(agendalesson).items():
-            print(f"{key}: {value}")
-        print("----")
-
-except Exception as e:
-    print(f"Error fetching agenda: {e}")
+# date of last week
+# timestamp_to_use=date.today() - timedelta(weeks=1)
+# timestamp_to_use=date.today()
+timestamp_to_use=date.today() + timedelta(days=1)
+# timestamp_to_use=date(2025, 6, 11)
+# timestamp_to_use=None
+agenda = list(SmartschoolLessons(smartschool=smartschoolSession, timestamp_to_use=timestamp_to_use))
+for agendalesson in agenda:
+# agendalesson = agenda[0]
+# if agendalesson:
+    for key, value in vars(agendalesson).items():
+        print(f"{key}: {value}")
+    print("----")
 
 # ... add calls to other features as needed ...
 

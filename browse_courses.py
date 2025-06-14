@@ -33,16 +33,13 @@ setup_logger(logging.DEBUG)
 creds = PathCredentials()
 # creds = PathCredentials("path/to/your/credentials.yml")
 
-# Start the session (handles login)
-session = Smartschool.start(creds)
+# Start the session (handles login)smartschool
+smartschoolSession = Smartschool(creds=creds)    
 
 # Example: List courses
 print("Fetching courses...")
-try:
-    for course in Courses():
-        print(f"- {course.name}")
-except Exception as e:
-    print(f"Error fetching courses: {e}")
+for course in Courses(smartschool=smartschoolSession):
+    print(f"- {course.name}")
 
 # ... add calls to other features as needed ...
 

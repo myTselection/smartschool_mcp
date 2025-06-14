@@ -35,19 +35,18 @@ creds = PathCredentials()
 # creds = PathCredentials("path/to/your/credentials.yml")
 
 # Start the session (handles login)
-session = Smartschool.start(creds)
+# session = Smartschool.start(creds)
+
+smartschoolSession = Smartschool(creds= creds)
 
 # Example: List courses
 print("Fetching results...")
-try:
     
-    results = list(Results())
-    for result in results:
-        for key, value in vars(result).items():
-            print(f"{key}: {value}")
+results = list(Results(smartschool=smartschoolSession))
+for result in results:
+    for key, value in vars(result).items():
+        print(f"{key}: {value}")
 
-except Exception as e:
-    print(f"Error results: {e}")
 
 # ... add calls to other features as needed ...
 
