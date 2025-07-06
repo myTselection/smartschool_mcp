@@ -39,7 +39,7 @@ creds = PathCredentials()
 smartschoolSession = Smartschool(creds=creds)
 
 # Example: List courses
-print("Fetching agenda...")
+print("Fetching messages...")
 # date of last week
 
 # timestamp_to_use=date.today() - timedelta(weeks=1)
@@ -47,11 +47,11 @@ print("Fetching agenda...")
 # timestamp_to_use=date.today() + timedelta(days=1)
 # timestamp_to_use=date(2025, 6, 11)
 timestamp_to_use=None
-agenda = list(SmartschoolLessons(smartschool=smartschoolSession, timestamp_to_use=timestamp_to_use))
-for agendalesson in agenda[0:10]:
+messages = list(MessageHeaders(smartschool=smartschoolSession))
+for message in messages[0:10]:
 # agendalesson = agenda[0]
 # if agendalesson:
-    for key, value in vars(agendalesson).items():
+    for key, value in vars(message).items():
         print(f"{key}: {value}")
     print("----")
 
